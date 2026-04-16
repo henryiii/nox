@@ -510,26 +510,78 @@ Or, if you wanted to provide a set of sessions that are run by default (this ove
 
     ...
 
-The following options can be specified in the Noxfile:
+Configuring Nox via TOML
+------------------------
 
-* ``nox.options.envdir`` is equivalent to specifying :ref:`--envdir <opt-envdir>`.
-* ``nox.options.sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`. If set to an empty list, no sessions will be run if no sessions were given on the command line, and the list of available sessions will be shown instead.
-* ``nox.options.pythons`` is equivalent to specifying :ref:`-p or --pythons <opt-sessions-pythons-and-keywords>`.
-* ``nox.options.keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-pythons-and-keywords>`.
-* ``nox.options.tags`` is equivalent to specifying :ref:`-t or --tags <opt-sessions-pythons-and-keywords>`.
-* ``nox.options.default_venv_backend`` is equivalent to specifying :ref:`-db or --default-venv-backend <opt-default-venv-backend>`.
-* ``nox.options.force_venv_backend`` is equivalent to specifying :ref:`-fb or --force-venv-backend <opt-force-venv-backend>`.
-* ``nox.options.reuse_venv`` is equivalent to specifying :ref:`--reuse-venv <opt-reuse-venv>`. Preferred over using ``nox.options.reuse_existing_virtualenvs``.
-* ``nox.options.reuse_existing_virtualenvs`` is equivalent to specifying :ref:`--reuse-existing-virtualenvs <opt-reuse-existing-virtualenvs>`. You can force this off by specifying ``--no-reuse-existing-virtualenvs`` during invocation. Alias of ``nox.options.reuse_venv=yes|no``.
-* ``nox.options.stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
-* ``nox.options.error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
-* ``nox.options.error_on_external_run`` is equivalent to specifying :ref:`--error-on-external-run <opt-error-on-external-run>`. You can force this off by specifying ``--no-error-on-external-run`` during invocation.
-* ``nox.options.download_python`` is equivalent to specifying ``--download-python``.
-* ``nox.options.report`` is equivalent to specifying :ref:`--report <opt-report>`.
-* ``nox.options.verbose`` is equivalent to specifying :ref:`-v or --verbose <opt-verbose>`. You can force this off by specifying ``--no-verbose`` during invocation.
+As an alternative to setting ``nox.options`` attributes in Python code, you can
+configure Nox options using TOML configuration. This is useful if you want to
+keep your configuration separate from your code, or when using Nox's `PEP 723
+script mode <usage.html#script-mode>`_.
+
+Configuration can be placed in either:
+
+1. A ``[tool.nox]`` table in a PEP 723 script block (for ``.py`` files with script dependencies)
+2. A ``[tool.nox]`` table in ``pyproject.toml`` (located next to your noxfile)
+
+Script block configuration takes precedence over ``pyproject.toml``.
+
+For example, in a noxfile with a PEP 723 script block:
+
+.. code-block:: python
+
+    # /// script
+    # dependencies = ["nox"]
+    # [tool.nox]
+    # default_venv_backend = "uv"
+    # sessions = ["lint", "test"]
+    # ///
+
+    import nox
+
+    @nox.session
+    def lint(session):
+        ...
+
+    @nox.session
+    def test(session):
+        ...
+
+Or in a ``pyproject.toml`` file:
+
+.. code-block:: toml
+
+    [tool.nox]
+    default_venv_backend = "uv"
+    sessions = ["lint", "test"]
+
+The following options can be specified via TOML (the same options available
+for ``nox.options``):
+
+* ``envdir`` is equivalent to specifying :ref:`--envdir <opt-envdir>`.
+* ``sessions`` is equivalent to specifying :ref:`-s or --sessions <opt-sessions-pythons-and-keywords>`. If set to an empty list, no sessions will be run if no sessions were given on the command line, and the list of available sessions will be shown instead.
+* ``pythons`` is equivalent to specifying :ref:`-p or --pythons <opt-sessions-pythons-and-keywords>`.
+* ``keywords`` is equivalent to specifying :ref:`-k or --keywords <opt-sessions-pythons-and-keywords>`.
+* ``tags`` is equivalent to specifying :ref:`-t or --tags <opt-sessions-pythons-and-keywords>`.
+* ``default_venv_backend`` is equivalent to specifying :ref:`-db or --default-venv-backend <opt-default-venv-backend>`.
+* ``force_venv_backend`` is equivalent to specifying :ref:`-fb or --force-venv-backend <opt-force-venv-backend>`.
+* ``reuse_venv`` is equivalent to specifying :ref:`--reuse-venv <opt-reuse-venv>`. Preferred over using ``reuse_existing_virtualenvs``.
+* ``reuse_existing_virtualenvs`` is equivalent to specifying :ref:`--reuse-existing-virtualenvs <opt-reuse-existing-virtualenvs>`. You can force this off by specifying ``--no-reuse-existing-virtualenvs`` during invocation. Alias of ``reuse_venv=yes|no``.
+* ``stop_on_first_error`` is equivalent to specifying :ref:`--stop-on-first-error <opt-stop-on-first-error>`. You can force this off by specifying ``--no-stop-on-first-error`` during invocation.
+* ``error_on_missing_interpreters`` is equivalent to specifying :ref:`--error-on-missing-interpreters <opt-error-on-missing-interpreters>`. You can force this off by specifying ``--no-error-on-missing-interpreters`` during invocation.
+* ``error_on_external_run`` is equivalent to specifying :ref:`--error-on-external-run <opt-error-on-external-run>`. You can force this off by specifying ``--no-error-on-external-run`` during invocation.
+* ``download_python`` is equivalent to specifying ``--download-python``.
+* ``report`` is equivalent to specifying :ref:`--report <opt-report>`.
+* ``verbose`` is equivalent to specifying :ref:`-v or --verbose <opt-verbose>`. You can force this off by specifying ``--no-verbose`` during invocation.
 
 
-When invoking ``nox``, any options specified on the command line take precedence over the options specified in the Noxfile. If either ``--sessions`` or ``--keywords`` is specified on the command line, *both* options specified in the Noxfile will be ignored.
+When invoking ``nox``, options are resolved in the following order of precedence (highest to lowest):
+
+1. Command-line arguments
+2. Explicit ``nox.options`` settings in the noxfile Python code
+3. Options specified in the TOML ``[tool.nox]`` section
+
+If either ``--sessions`` or ``--keywords`` is specified on the command line,
+*both* ``sessions`` and ``keywords`` specified via ``nox.options`` or TOML will be ignored.
 
 
 Nox version requirements

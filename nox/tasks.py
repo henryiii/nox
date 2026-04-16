@@ -20,12 +20,12 @@ import json
 import os
 import sys
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from colorlog.escape_codes import parse_colors
 
 import nox
-from nox import _options, registry
+from nox import _options, project, registry
 from nox._resolver import CycleError
 from nox._version import InvalidVersionSpecifier, VersionCheckFailed, check_nox_version
 from nox.logger import logger
@@ -85,6 +85,25 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     return module
 
 
+def _apply_toml_options_as_defaults(toml_options: dict[str, Any]) -> None:
+    """Apply options from [tool.nox] TOML section as defaults to ``nox.options``.
+
+    This only sets options that are:
+    - Valid nox.options attributes
+    - Still at their default values (not already modified in Python code)
+
+    Args:
+        toml_options: Dictionary of options from [tool.nox] section.
+    """
+    for key, value in toml_options.items():
+        # Only set if the option is valid for nox.options
+        if hasattr(nox.options, key):
+            # Skip lists that are empty since defaults can be None
+            if isinstance(value, list) and not value:
+                continue
+            setattr(nox.options, key, value)
+
+
 def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     """Load the user's Noxfile and return the module object for it.
 
@@ -112,6 +131,10 @@ def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
     global_config.noxfile = global_config.noxfile.__class__(
         os.path.join(noxfile_parent_dir, os.path.basename(global_config_noxfile))
     )
+
+    # Load TOML options BEFORE executing the module, so they become defaults
+    toml_options = project.nox_toml_options(global_config.noxfile)
+    _apply_toml_options_as_defaults(toml_options)
 
     try:
         # Check ``nox.needs_version`` by parsing the AST.

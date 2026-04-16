@@ -12,7 +12,7 @@ import nox
 def exec_example(session: nox.Session) -> None:
     # Importing inside the function so that if the test fails,
     # it shows a better failure than immediately failing to import
-    import cowsay  # noqa: PLC0415
+    import cowsay
 
     print(cowsay.cow("another_world"))
 

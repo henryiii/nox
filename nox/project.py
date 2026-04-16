@@ -19,7 +19,7 @@ else:
     import tomllib
 
 
-__all__ = ["dependency_groups", "load_toml", "python_versions"]
+__all__ = ["dependency_groups", "load_toml", "nox_toml_options", "python_versions"]
 
 
 def __dir__() -> list[str]:
@@ -158,3 +158,70 @@ def dependency_groups(pyproject: dict[str, Any], *groups: str) -> tuple[str, ...
     """
     dep_groups = pyproject["dependency-groups"]
     return resolve(dep_groups, *groups)
+
+
+def nox_toml_options(noxfile: os.PathLike[str] | str) -> dict[str, Any]:
+    """
+    Load Nox options from TOML configuration in a noxfile or pyproject.toml.
+
+    This function looks for options in the ``[tool.nox]`` section:
+    - In the PEP 723 script block (for .py files) - takes precedence
+    - In pyproject.toml next to the noxfile (as fallback)
+
+    The options found will become the default values for :data:`nox.options`,
+    which can be overridden by explicit ``nox.options`` settings in the noxfile
+    or by command-line arguments.
+
+    Args:
+        noxfile: Path to the noxfile.py or pyproject.toml.
+
+    Returns:
+        A dictionary of options from ``[tool.nox]`` section, or empty dict if
+        no such section exists.
+
+    Example:
+
+    In a noxfile.py with PEP 723 script block:
+
+    .. code-block:: python
+
+        # /// script
+        # dependencies = ["nox"]
+        # [tool.nox]
+        # default_venv_backend = "uv"
+        # sessions = ["lint", "test"]
+        # ///
+
+        import nox
+
+        @nox.session
+        def lint(session):
+            ...
+    """
+    noxfile_path = Path(noxfile)
+
+    # If the file doesn't exist, return empty dict
+    if not noxfile_path.is_file():
+        return {}
+
+    toml_config = {}
+
+    # First try to load from a PEP 723 script block if it's a .py file
+    if noxfile_path.suffix == ".py":
+        toml_config = load_toml(noxfile_path, missing_ok=True)
+
+        # If no script block found, try to load from adjacent pyproject.toml
+        if not toml_config:
+            pyproject_path = noxfile_path.parent / "pyproject.toml"
+            if pyproject_path.is_file():
+                toml_config = _load_toml_file(pyproject_path)
+    elif noxfile_path.suffix == ".toml":
+        toml_config = _load_toml_file(noxfile_path)
+    else:
+        return {}
+
+    # Extract [tool.nox] section if present
+    if tool_nox := toml_config.get("tool", {}).get("nox"):
+        return tool_nox  # type: ignore[no-any-return]
+
+    return {}
