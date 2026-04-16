@@ -116,6 +116,10 @@ lint.flake8-annotations.allow-star-arg-any = true
 lint.flake8-builtins.ignorelist = [ "copyright" ]
 lint.flake8-unused-arguments.ignore-variadic-names = true
 
+[tool.codespell]
+# These words are used intentionally as typos in tests
+ignore-words-list = "sesions,verrbose"
+
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
 

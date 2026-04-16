@@ -294,8 +294,8 @@ def test_toml_options_skip_empty_lists(tmp_path: Path) -> None:
     assert nox.options.sessions is None
 
 
-def test_toml_options_invalid_option_name(tmp_path: Path) -> None:
-    """Test that invalid option names in TOML are silently ignored."""
+def test_toml_options_invalid_option_name_raises_error(tmp_path: Path) -> None:
+    """Test that invalid option names in TOML raise an error with helpful message."""
     noxfile = tmp_path / "noxfile.py"
     noxfile.write_text(
         textwrap.dedent(
@@ -315,13 +315,62 @@ def test_toml_options_invalid_option_name(tmp_path: Path) -> None:
     options = nox_toml_options(noxfile)
     assert options == {"invalid_option": "value", "default_venv_backend": "uv"}
 
-    # Reset and apply
+    # Reset and apply - should raise ValueError for invalid option
     nox.options = _options.options.noxfile_namespace()
-    tasks._apply_toml_options_as_defaults(options)
+    with pytest.raises(ValueError, match="Unrecognized option 'invalid_option'"):
+        tasks._apply_toml_options_as_defaults(options)
 
-    # Invalid option should be ignored, valid one should be set
-    assert not hasattr(nox.options, "invalid_option")
-    assert nox.options.default_venv_backend == "uv"
+
+def test_toml_options_misspelled_option_suggestion(tmp_path: Path) -> None:
+    """Test that misspelled option names get a helpful 'did you mean' suggestion."""
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        textwrap.dedent(
+            """\
+            # /// script
+            # [tool.nox]
+            # sesions = ["lint"]
+            # ///
+
+            import nox
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    options = nox_toml_options(noxfile)
+    assert options == {"sesions": ["lint"]}
+
+    # Reset and apply - should raise ValueError with suggestion
+    nox.options = _options.options.noxfile_namespace()
+    with pytest.raises(ValueError, match=r"Did you mean 'sessions'\?"):
+        tasks._apply_toml_options_as_defaults(options)
+
+
+def test_toml_options_typo_verbose_suggestion(tmp_path: Path) -> None:
+    """Test that common typos like 'verrbose' get a suggestion for 'verbose'."""
+    noxfile = tmp_path / "noxfile.py"
+    noxfile.write_text(
+        textwrap.dedent(
+            """\
+            # /// script
+            # [tool.nox]
+            # verrbose = true  # typo: double 'r'
+            # ///
+
+            import nox
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    options = nox_toml_options(noxfile)
+    assert options == {"verrbose": True}
+
+    # Reset and apply - should raise ValueError with suggestion
+    nox.options = _options.options.noxfile_namespace()
+    with pytest.raises(ValueError, match=r"Did you mean 'verbose'\?"):
+        tasks._apply_toml_options_as_defaults(options)
 
 
 def test_nox_toml_options_from_pyproject_directly(tmp_path: Path) -> None:

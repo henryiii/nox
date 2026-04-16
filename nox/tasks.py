@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import ast
+import difflib
 import importlib.util
 import json
 import os
@@ -85,6 +86,20 @@ def _load_and_exec_nox_module(global_config: Namespace) -> types.ModuleType:
     return module
 
 
+def _get_suggestion(invalid_key: str, valid_keys: set[str]) -> str | None:
+    """Get a suggestion for a misspelled option key using difflib.
+
+    Args:
+        invalid_key: The invalid key that was provided.
+        valid_keys: Set of valid option keys.
+
+    Returns:
+        A suggestion string if a close match is found, None otherwise.
+    """
+    matches = difflib.get_close_matches(invalid_key, valid_keys, n=1, cutoff=0.6)
+    return matches[0] if matches else None
+
+
 def _apply_toml_options_as_defaults(toml_options: dict[str, Any]) -> None:
     """Apply options from [tool.nox] TOML section as defaults to ``nox.options``.
 
@@ -94,14 +109,27 @@ def _apply_toml_options_as_defaults(toml_options: dict[str, Any]) -> None:
 
     Args:
         toml_options: Dictionary of options from [tool.nox] section.
+
+    Raises:
+        ValueError: If an unrecognized option is found in [tool.nox].
     """
+    # Get valid option names from NoxOptions
+    valid_keys = set(nox.options.__class__.__annotations__.keys())
+
     for key, value in toml_options.items():
-        # Only set if the option is valid for nox.options
-        if hasattr(nox.options, key):
-            # Skip lists that are empty since defaults can be None
-            if isinstance(value, list) and not value:
-                continue
-            setattr(nox.options, key, value)
+        # Validate that the option is recognized
+        if key not in valid_keys:
+            suggestion = _get_suggestion(key, valid_keys)
+            if suggestion:
+                msg = f"Unrecognized option '{key}' in [tool.nox]. Did you mean '{suggestion}'?"
+            else:
+                msg = f"Unrecognized option '{key}' in [tool.nox]. Valid options are: {', '.join(sorted(valid_keys))}"
+            raise ValueError(msg)
+
+        # Skip lists that are empty since defaults can be None
+        if isinstance(value, list) and not value:
+            continue
+        setattr(nox.options, key, value)
 
 
 def load_nox_module(global_config: Namespace) -> types.ModuleType | int:
