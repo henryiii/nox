@@ -71,7 +71,6 @@ class Func(FunctionDecorator):
         func: Callable[..., Any],
         python: _typing.Python = None,
         reuse_venv: bool | None = None,  # noqa: FBT001
-        name: str | None = None,
         venv_backend: str | None = None,
         venv_params: Sequence[str] = (),
         should_warn: Mapping[str, Any] | None = None,
@@ -86,7 +85,6 @@ class Func(FunctionDecorator):
         self.func = func
         self.python = python
         self.reuse_venv = reuse_venv
-        self.name = name
         self.venv_backend = venv_backend
         self.venv_params = venv_params
         self.should_warn = dict(should_warn or {})
@@ -94,8 +92,30 @@ class Func(FunctionDecorator):
         self.default = default
         self.requires = list(requires or [])
         self.download_python = download_python
-        self.env_name = env_name
-        self.task_name = task_name
+        self._env_name = env_name
+        self._task_name = task_name
+
+    @property
+    def env_name(self) -> str | None:
+        return self._env_name
+
+    @env_name.setter
+    def env_name(self, value: str | None) -> None:
+        self._env_name = value
+
+    @property
+    def task_name(self) -> str | None:
+        return self._task_name
+
+    @task_name.setter
+    def task_name(self, value: str | None) -> None:
+        self._task_name = value
+
+    @property
+    def name(self) -> str | None:
+        if self._env_name and self._task_name and self._env_name != self._task_name:
+            return f"{self._env_name}:{self._task_name}"
+        return self._env_name or self._task_name
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -103,14 +123,13 @@ class Func(FunctionDecorator):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.func(*args, **kwargs)
 
-    def copy(self, name: str | None = None) -> Func:
-        """Copy this function with a new name."""
+    def copy(self) -> Func:
+        """Copy this function."""
 
         return Func(
-            _copy_func(self.func, name),
+            _copy_func(self.func),
             self.python,
             self.reuse_venv,
-            name,
             self.venv_backend,
             self.venv_params,
             self.should_warn,
@@ -168,7 +187,6 @@ class Call(Func):
             func,
             python,
             func.reuse_venv,
-            None,
             func.venv_backend,
             func.venv_params,
             func.should_warn,

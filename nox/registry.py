@@ -144,7 +144,6 @@ def session_decorator(
         func,
         python,
         reuse_venv,
-        reg_name,
         venv_backend,
         venv_params,
         tags=tags,
@@ -155,14 +154,14 @@ def session_decorator(
         task_name=task_name,
     )
 
-    if reg_name in _REGISTRY:
+    if fn.name in _REGISTRY:
         msg = (
-            f"The session {reg_name!r} has already been registered; "
+            f"The session {fn.name!r} has already been registered; "
             "this will be an error in a future version of nox. "
             "Overriding the old session for now."
         )
         warnings.warn(msg, FutureWarning, stacklevel=2)
-    _REGISTRY[reg_name] = fn
+    _REGISTRY[fn.name] = fn
     return fn
 
 
