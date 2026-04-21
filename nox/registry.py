@@ -43,6 +43,16 @@ def reset() -> None:
     _REGISTRY.clear()
 
 
+def _create_implicit_env(name: str) -> Any:
+    """Create an implicit environment for backwards-compatible session usage."""
+    from nox.env import _ENV_REGISTRY, ManualEnv, _register_env  # noqa: PLC0415
+
+    if name not in _ENV_REGISTRY:
+        env = ManualEnv(name=name)
+        _register_env(env)
+    return _ENV_REGISTRY[name]
+
+
 @overload
 def session_decorator(func: RawFunc | Func, /) -> Func: ...
 
@@ -117,20 +127,34 @@ def session_decorator(
         python = py
 
     final_name = name or func.__name__
+    has_colon = ":" in final_name
+
+    # For backward compatibility, create an implicit env when using plain names.
+    if not has_colon:
+        _create_implicit_env(final_name)
+        env_name = final_name
+        task_name = final_name
+        reg_name = final_name
+    else:
+        # This is an explicit env:task registration (e.g. from @env.task()).
+        env_name, task_name = final_name.split(":", 1)
+        reg_name = final_name
 
     fn = Func(
         func,
         python,
         reuse_venv,
-        final_name,
+        reg_name,
         venv_backend,
         venv_params,
         tags=tags,
         default=default,
         requires=requires,
         download_python=download_python,
+        env_name=env_name,
+        task_name=task_name,
     )
-    reg_name = name or func.__name__
+
     if reg_name in _REGISTRY:
         msg = (
             f"The session {reg_name!r} has already been registered; "

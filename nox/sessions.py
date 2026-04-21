@@ -1033,6 +1033,18 @@ class SessionRunner:
 
     @property
     def envdir(self) -> str:
+        from nox.env import get_envs  # noqa: PLC0415
+
+        env_name = getattr(self.func, "env_name", None)
+        if env_name is not None:
+            envs = get_envs()
+            env = envs.get(env_name)
+            if env is not None:
+                loc = env._resolve_loc(self.friendly_name)
+                if env.loc is not None and "{slug}" not in env.loc:
+                    # Manual env loc is the exact directory.
+                    return os.path.abspath(loc)
+                return _normalize_path(self.global_config.envdir, loc)
         return _normalize_path(self.global_config.envdir, self.friendly_name)
 
     def get_direct_dependencies(

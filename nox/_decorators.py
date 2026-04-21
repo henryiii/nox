@@ -80,6 +80,8 @@ class Func(FunctionDecorator):
         default: bool = True,
         requires: Sequence[str] | None = None,
         download_python: Literal["auto", "never", "always"] | None = None,
+        env_name: str | None = None,
+        task_name: str | None = None,
     ) -> None:
         self.func = func
         self.python = python
@@ -92,6 +94,8 @@ class Func(FunctionDecorator):
         self.default = default
         self.requires = list(requires or [])
         self.download_python = download_python
+        self.env_name = env_name
+        self.task_name = task_name
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -114,6 +118,8 @@ class Func(FunctionDecorator):
             default=self.default,
             requires=self._requires,
             download_python=self.download_python,
+            env_name=self.env_name,
+            task_name=self.task_name,
         )
 
     @property
@@ -170,6 +176,8 @@ class Call(Func):
             default=func.default,
             requires=func.requires,
             download_python=func.download_python,
+            env_name=func.env_name,
+            task_name=func.task_name,
         )
         self.call_spec = call_spec
         self.session_signature = session_signature

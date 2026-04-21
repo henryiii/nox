@@ -21,14 +21,17 @@ from nox._cli import main
 from nox._options import noxfile_options as options
 from nox._parametrize import Param as param  # noqa: N813
 from nox._parametrize import parametrize_decorator as parametrize
+from nox.env import ManualEnv, manual
 from nox.registry import session_decorator as session
 from nox.sessions import Session
 
 needs_version: str | None = None
 
 __all__ = [
+    "ManualEnv",
     "Session",
     "main",
+    "manual",
     "needs_version",
     "options",
     "param",
