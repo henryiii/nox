@@ -95,6 +95,7 @@ jobs:
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-python-virtualenv
+            mingw-w64-x86_64-gcc
       - name: Install Nox-under-test
         run: python -m pip install .
       - name: Run tests under MinGW
