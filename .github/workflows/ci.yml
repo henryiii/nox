@@ -94,6 +94,9 @@ jobs:
         with:
           msystem: MINGW64
           update: true
+          # inherit the runner PATH so the standalone uv (added to GITHUB_PATH
+          # by setup-uv, which runs after this step) is visible to MinGW Python
+          path-type: inherit
           install: >-
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-pip
