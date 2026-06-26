@@ -688,6 +688,12 @@ def test_create(
         assert dir_.joinpath("Scripts", "pip.exe").exists()
         assert dir_.joinpath("Lib").exists()
         assert str(dir_.joinpath("Scripts")) in venv.bin_paths
+    elif IS_MINGW:
+        # MinGW uses a POSIX bin/ dir but Windows-style ``.exe`` executables.
+        assert dir_.joinpath("bin", "python.exe").exists()
+        assert dir_.joinpath("bin", "pip.exe").exists()
+        assert dir_.joinpath("lib").exists()
+        assert str(dir_.joinpath("bin")) in venv.bin_paths
     else:
         assert dir_.joinpath("bin", "python").exists()
         assert dir_.joinpath("bin", "pip").exists()

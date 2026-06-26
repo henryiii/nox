@@ -111,7 +111,6 @@ jobs:
           pyver=$(python -c "import sys; print('{}.{}'.format(*sys.version_info))")
           echo "MSYS2 MinGW Python: $pyver"
           python -c "import shutil; print('uv discovered at:', shutil.which('uv'))"
-          python -m virtualenv /tmp/probe-venv >/dev/null && echo "PROBE bin:" && ls /tmp/probe-venv/bin 2>/dev/null && echo "PROBE Scripts:" && ls /tmp/probe-venv/Scripts 2>/dev/null; echo "PROBE end"
           # Force virtualenv so the session venv stays a MinGW interpreter
           # (_IS_MINGW=True). uv stays on PATH, so the uv-backend tests still
           # build real uv venvs from within MinGW, exercising #1117.
