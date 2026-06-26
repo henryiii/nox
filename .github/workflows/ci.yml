@@ -77,6 +77,8 @@ jobs:
 
   # Experimental: exercise the MinGW-specific code paths (nox.virtualenv._IS_MINGW)
   # on a real MSYS2 runner. Non-blocking until proven stable.
+  # `uv` has no mingw-w64 build; the msys-repo build lands on /usr/bin (on PATH
+  # in the MINGW64 shell), letting the uv-backend tests run against MinGW Python.
   msys2:
     runs-on: windows-latest
     continue-on-error: true
@@ -96,6 +98,7 @@ jobs:
             mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-python-virtualenv
             mingw-w64-x86_64-gcc
+            uv
       - name: Install Nox-under-test
         run: python -m pip install .
       - name: Run tests under MinGW
