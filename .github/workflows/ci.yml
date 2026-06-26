@@ -96,7 +96,7 @@ jobs:
             mingw-w64-x86_64-python-pip
             mingw-w64-x86_64-python-virtualenv
       - name: Install Nox-under-test
-        run: python -m pip install --no-build-isolation .
+        run: python -m pip install .
       - name: Run tests under MinGW
         run: |
           pyver=$(python -c "import sys; print('{}.{}'.format(*sys.version_info))")
