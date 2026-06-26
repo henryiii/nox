@@ -111,7 +111,10 @@ jobs:
           pyver=$(python -c "import sys; print('{}.{}'.format(*sys.version_info))")
           echo "MSYS2 MinGW Python: $pyver"
           python -c "import shutil; print('uv discovered at:', shutil.which('uv'))"
-          nox --session "tests-$pyver" -- --durations=10
+          # Force virtualenv so the session venv stays a MinGW interpreter
+          # (_IS_MINGW=True). uv stays on PATH, so the uv-backend tests still
+          # build real uv venvs from within MinGW, exercising #1117.
+          nox --session "tests-$pyver" --force-venv-backend virtualenv -- --durations=10
       - name: Save coverage report
         uses: actions/upload-artifact@v7
         with:
